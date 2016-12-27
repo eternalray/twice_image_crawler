@@ -25,12 +25,15 @@ def is_gif(string):
 if __name__ == "__main__":
 
     ''' to do : reqeusts exception handling
-                page parsing
+                page parsing -> done
+                BeautifulSoup exception handling
+                modularizing
     '''
 
 
     queue = deque()
-
+    count_image = 0
+    count_gif = 0
     for i in range(1,1000):
         page_url = "http://gall.dcinside.com/board/lists/?id=twice&page=" + str(i) + "&exception_mode=recommend"
         response = requests.get(page_url)
@@ -41,29 +44,47 @@ if __name__ == "__main__":
             future work : tell whether it is image or gif by checking magic number of binary
         '''
 
-        image_url = soup.find_all(attrs={ "class" : "icon_pic_b" }, string = is_image)
-        gif_url = soup.find_all(attrs={ "class" : "icon_pic_b" }, string = is_gif)
+        image_url_tag = soup.find_all(attrs={ "class" : "icon_pic_b" }, string = is_image)
+        gif_url_tag = soup.find_all(attrs={ "class" : "icon_pic_b" }, string = is_gif)
 
-        for j in range(len(image_url)):
+        for j in range(len(image_url_tag)):
+            print("crawling image from " + image_url_tag[j].string)
+            image_article_url = "http://gall.dcinside.com/" + image_url_tag[j].attrs['href']
+            response = requests.get(image_article_url)
 
+            soup = BeautifulSoup(response.text, 'lxml')
+            image_tag = soup.find_all(attrs={ "app_paragraph" : re.compile("^Dc_App_Img_[0-9]+$"), "app_editorno" : re.compile("^[0-9]+$") })
 
-    #response = requests.get("")
-    #response = requests.get("http://gall.dcinside.com/board/view/?id=twice&no=2555429&page=2&exception_mode=recommend")
+            for a in range(len(image_tag)):
 
-    ''' to do : BeautifulSoup exception handling '''
-    soup = BeautifulSoup(response.text, 'lxml')
+                image_src = image_tag[a].find('img')
+                image_response = requests.get(image_src.attrs['src'], stream=True)
 
-    image_tag = soup.find_all(attrs={ "app_paragraph" : re.compile("^Dc_App_Img_[0-9]+$"), "app_editorno" : re.compile("^[0-9]+$") }) # find the first image
+                ''' to do : file name should be determined
+                            check magic number and decide the extension of file
+                '''
+                with open('twice_img/twice' + str(count_image + 1) + '.jpg', 'wb') as fd:
+                    for chunk in image_response.iter_content(chunk_size=1024*1024):
+                        fd.write(chunk)
+                count_image += 1
 
-    for i in range(len(image_tag)):
-        image_src = image_tag[i].find('img')
+        for k in range(len(gif_url_tag)):
+            print("crawling gif from " + gif_url_tag[k].string)
+            gif_article_url = "http://gall.dcinside.com/" + gif_url_tag[k].attrs['href']
+            response = requests.get(gif_article_url)
 
-        '''to do : exception handling '''
-        image_response = requests.get(image_src.attrs['src'], stream=True)
+            soup = BeautifulSoup(response.text, 'lxml')
+            gif_tag = soup.find_all(attrs={ "app_paragraph" : re.compile("^Dc_App_Img_[0-9]+$"), "app_editorno" : re.compile("^[0-9]+$") })
 
-        ''' to do :file name should be determined
-                   check magic number and decide the extension of file
-        '''
-        with open('twice/twice' + str(i) + '.jpg', 'wb') as fd:
-            for chunk in image_response.iter_content(chunk_size=1024*1024):
-                fd.write(chunk)
+            for b in range(len(gif_tag)):
+
+                gif_src = gif_tag[b].find('img')
+                gif_response = requests.get(gif_src.attrs['src'], stream=True)
+
+                ''' to do : file name should be determined
+                            check magic number and decide the extension of file
+                '''
+                with open('twice_gif/twice' + str(count_gif + 1) + '.gif', 'wb') as fd:
+                    for chunk in gif_response.iter_content(chunk_size=1024*1024):
+                        fd.write(chunk)
+                count_gif += 1
