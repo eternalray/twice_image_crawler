@@ -1,90 +1,101 @@
+
+
+
+
+''' to do : reqeusts exception handling
+                page parsing -> done
+                BeautifulSoup exception handling
+                modularizing -> done
+                file deduplication
+                machine learning
+                etc...
+'''
+
+
 import re
 import requests
 from bs4 import BeautifulSoup
 from collections import deque
 
+class Crawler:
 
-def is_image(string):
-    image_pattern = "[0-9]+p|[0-9]+pic|과질|고화질"
-    image_regex = re.compile(image_pattern)
-    match = re.search(image_regex, string)
-    if match and not is_gif(string):
-        return True
-    else:
-        return False
+    ''' for numbering files '''
+    def __init__(self,count_image,count_gif):
+        self.count_image = count_image
+        self.count_gif = count_gif
 
-def is_gif(string):
-    gif_pattern = "gif|움짤"
-    gif_regex = re.compile(gif_pattern)
-    match = re.search(gif_regex ,string)
-    if match:
-        return True
-    else:
-        return False
+
+    def crawl(self):
+
+        def _is_image(string):
+            image_pattern = "[0-9]+p|[0-9]+pic|과질|고화질"
+            image_regex = re.compile(image_pattern)
+            match = re.search(image_regex, string)
+            if match and not _is_gif(string):
+                return True
+            else:
+                return False
+
+        def _is_gif(string):
+            gif_pattern = "gif|움짤"
+            gif_regex = re.compile(gif_pattern)
+            match = re.search(gif_regex ,string)
+            if match:
+                return True
+            else:
+                return False
+
+        def _crawl(count, url_tag, flag):
+
+            for i in range(len(url_tag)):
+                print("crawling " + url_tag[i].string)
+                article_url = "http://gall.dcinside.com/" + url_tag[i].attrs['href']
+                response = requests.get(article_url)
+
+                soup = BeautifulSoup(response.text, 'lxml')
+                tag = soup.find_all(attrs={ "app_paragraph" : re.compile("^Dc_App_Img_[0-9]+$"), "app_editorno" : re.compile("^[0-9]+$") })
+                save_path = ""
+                save_extension = ""
+
+                for j in range(len(tag)):
+                    src = tag[j].find('img')
+                    image_response = requests.get(src.attrs['src'], stream=True)
+
+                    if flag == "image":
+                        save_path = "twice_img/twice" + str(count + 1)
+                        save_extension = ".jpg"
+
+                    elif flag == "gif":
+                        save_path = "twice_gif/twice" + str(count + 1)
+                        save_extension = ".gif"
+
+                    with open(save_path + save_extension, "wb") as fd:
+                        for chunk in image_response.iter_content(chunk_size=1024*1024):
+                            fd.write(chunk)
+                    count += 1
+
+
+        for i in range(1,1000):
+            page_url = "http://gall.dcinside.com/board/lists/?id=twice&page=" + str(i) + "&exception_mode=recommend"
+            response = requests.get(page_url)
+
+            soup = BeautifulSoup(response.text, 'lxml')
+
+            ''' check whether the given url is image or gif by looking title
+                future work : tell whether it is image or gif by checking magic number of binary
+            '''
+
+            image_url_tag = soup.find_all(attrs={ "class" : "icon_pic_b" }, string=_is_image)
+            gif_url_tag = soup.find_all(attrs={ "class" : "icon_pic_b" }, string=_is_gif)      # these two lines are ultimately going to be merged
+
+            _crawl(self.count_image, image_url_tag, "image")
+            _crawl(self.count_gif, gif_url_tag, "gif")
+
 
 if __name__ == "__main__":
 
-    ''' to do : reqeusts exception handling
-                page parsing -> done
-                BeautifulSoup exception handling
-                modularizing
-    '''
-
-
-    queue = deque()
     count_image = 0
     count_gif = 0
-    for i in range(1,1000):
-        page_url = "http://gall.dcinside.com/board/lists/?id=twice&page=" + str(i) + "&exception_mode=recommend"
-        response = requests.get(page_url)
 
-        soup = BeautifulSoup(response.text, 'lxml')
-
-        ''' check whether the given url is image or gif by looking title
-            future work : tell whether it is image or gif by checking magic number of binary
-        '''
-
-        image_url_tag = soup.find_all(attrs={ "class" : "icon_pic_b" }, string = is_image)
-        gif_url_tag = soup.find_all(attrs={ "class" : "icon_pic_b" }, string = is_gif)
-
-        for j in range(len(image_url_tag)):
-            print("crawling image from " + image_url_tag[j].string)
-            image_article_url = "http://gall.dcinside.com/" + image_url_tag[j].attrs['href']
-            response = requests.get(image_article_url)
-
-            soup = BeautifulSoup(response.text, 'lxml')
-            image_tag = soup.find_all(attrs={ "app_paragraph" : re.compile("^Dc_App_Img_[0-9]+$"), "app_editorno" : re.compile("^[0-9]+$") })
-
-            for a in range(len(image_tag)):
-
-                image_src = image_tag[a].find('img')
-                image_response = requests.get(image_src.attrs['src'], stream=True)
-
-                ''' to do : file name should be determined
-                            check magic number and decide the extension of file
-                '''
-                with open('twice_img/twice' + str(count_image + 1) + '.jpg', 'wb') as fd:
-                    for chunk in image_response.iter_content(chunk_size=1024*1024):
-                        fd.write(chunk)
-                count_image += 1
-
-        for k in range(len(gif_url_tag)):
-            print("crawling gif from " + gif_url_tag[k].string)
-            gif_article_url = "http://gall.dcinside.com/" + gif_url_tag[k].attrs['href']
-            response = requests.get(gif_article_url)
-
-            soup = BeautifulSoup(response.text, 'lxml')
-            gif_tag = soup.find_all(attrs={ "app_paragraph" : re.compile("^Dc_App_Img_[0-9]+$"), "app_editorno" : re.compile("^[0-9]+$") })
-
-            for b in range(len(gif_tag)):
-
-                gif_src = gif_tag[b].find('img')
-                gif_response = requests.get(gif_src.attrs['src'], stream=True)
-
-                ''' to do : file name should be determined
-                            check magic number and decide the extension of file
-                '''
-                with open('twice_gif/twice' + str(count_gif + 1) + '.gif', 'wb') as fd:
-                    for chunk in gif_response.iter_content(chunk_size=1024*1024):
-                        fd.write(chunk)
-                count_gif += 1
+    crawler = Crawler(count_image, count_gif)
+    crawler.crawl()
