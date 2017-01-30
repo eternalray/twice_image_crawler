@@ -19,9 +19,14 @@ if __name__ == "__main__":
         fd = open("crawl_status.txt","r")
         fd.seek(14)
         count_image = int(fd.readline()) # get image count from crawl_status.txt
-
+        fd.seek(31)
+        prev_start_point = int(fd.readline()) # get previous crawl start point from crawl_status.txt
+        fd.seek(51)
+        prev_end_point = int(fd.readline()) # get previous crawl end point from crawl_status.txt
     except FileNotFoundError:
         count_image = 0 # if it is the first time doing crawling, set count_image to 0
+        prev_start_point = 0
+        prev_end_point = 0
 
-    crawler = Crawler(count_image)
+    crawler = Crawler(count_image,prev_start_point,prev_end_point)
     crawler.crawl()
