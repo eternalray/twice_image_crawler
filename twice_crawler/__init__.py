@@ -15,7 +15,7 @@ class Crawler:
         self._last_article_number = None
 
     def _isImage(self,string):
-        image_pattern = "사진|[0-9]+[Pp]|과질|고화질|!프리뷰|!플뷰|[GgIiFf]|움짤|[출퇴]근길|[Bb][Yy]|"
+        image_pattern = "사진|[0-9]+[Pp]|과질|고화질|!프리뷰|!플뷰|[GgIiFf]|움짤|[출퇴]근길|[Bb][Yy]"
         image_regex = re.compile(image_pattern)
         match = re.search(image_regex, string)
         return match
