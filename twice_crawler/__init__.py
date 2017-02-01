@@ -15,10 +15,13 @@ class Crawler:
         self._last_article_number = None
 
     def _isImage(self,string):
-        image_pattern = "사진|[0-9]+[Pp]|과질|고화질|!프리뷰|!플뷰|[Gg][Ii][Ff]|움짤|[출퇴]근길|[Bb][Yy]"
+        image_pattern = "사진|[0-9]+[Pp]|과질|고화질|[Gg][Ii][Ff]|움짤|[출퇴]근길|[Bb][Yy]"
+        image_pattern_to_exclude = "!프리뷰|!플뷰"
         image_regex = re.compile(image_pattern)
+        image_regex_to_exclude = re.compile(image_pattern_to_exclude)
         match = re.search(image_regex, string)
-        return match
+        match_to_exclude = re.search(image_regex_to_exclude)
+        return match_to_exclude and match
 
     def _logStatus(self,start_point,end_point):
         with open("crawl_status.txt","w") as fd:
