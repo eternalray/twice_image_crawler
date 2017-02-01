@@ -4,7 +4,6 @@ import requests
 import datetime
 import os
 from bs4 import BeautifulSoup
-from collections import deque
 
 class Crawler:
 
@@ -16,7 +15,7 @@ class Crawler:
         self._last_article_number = None
 
     def _isImage(self,string):
-        image_pattern = "[0-9]+[Pp]|과질|고화질|!프리뷰|!플뷰|[GgIiFf]|움짤|[출퇴]근길|[Bb][Yy]"
+        image_pattern = "사진|[0-9]+[Pp]|과질|고화질|!프리뷰|!플뷰|[GgIiFf]|움짤|[출퇴]근길|[Bb][Yy]|"
         image_regex = re.compile(image_pattern)
         match = re.search(image_regex, string)
         return match
@@ -44,7 +43,7 @@ class Crawler:
             if not tag:
                 tag = soup.find_all(attrs={ "class" : "txc-image" })
                 for j in range(len(tag)):
-                    tag[j] = tag[j].parent # we have to modify this because the DOM tree is totally different from normal one
+                    tag[j] = tag[j].parent # had to do this because the DOM tree is totally different from normal one
 
             for j in range(len(tag)):
                 src = tag[j].find('img')
@@ -111,7 +110,7 @@ class Crawler:
             if start_article_number is None:
                 start_article_number = self._getArticleNumber(image_url_tag,0)
             try:
-                self.count_image = self._crawl(image_url_tag)
+                self._crawl(image_url_tag)
             except KeyboardInterrupt as e:
                 if self.count_image is 0:
                     exit(1)
