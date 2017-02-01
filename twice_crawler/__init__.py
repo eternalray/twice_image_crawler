@@ -20,7 +20,7 @@ class Crawler:
         image_regex = re.compile(image_pattern)
         image_regex_to_exclude = re.compile(image_pattern_to_exclude)
         match = re.search(image_regex, string)
-        match_to_exclude = re.search(image_regex_to_exclude)
+        match_to_exclude = re.search(image_regex_to_exclude, string)
         return match_to_exclude and match
 
     def _logStatus(self,start_point,end_point):
